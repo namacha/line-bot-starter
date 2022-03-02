@@ -58,6 +58,11 @@ def cmd1_arg2_opt(event):
     return get_function_name()
 
 
+@cmd1_arg2.register("^opt[DEF]$")
+def cmd1_arg2_opt2(event):
+    return get_function_name()
+
+
 @root.register("^arg2$")
 def arg2(event):
     """arg2: desc"""
@@ -150,6 +155,22 @@ def test_cmd1_arg2_opt_user_match():
 
 def test_cmd1_arg2_opt_user_mismatch():
     msg = "cmd1 arg6 optA"
+    event = Event()
+    event.message.text = msg
+    event.source.user_id = "NON_ADMIN_ID"
+    assert root.process(event) == "ADMIN ONLY"
+
+
+def test_cmd1_arg2_opt2_user_match():
+    msg = "cmd1 arg6 optE"
+    event = Event()
+    event.message.text = msg
+    event.source.user_id = "ADMIN_ID"
+    assert root.process(event) == "cmd1_arg2_opt2"
+
+
+def test_cmd1_arg2_opt2_user_mismatch():
+    msg = "cmd1 arg6 optE"
     event = Event()
     event.message.text = msg
     event.source.user_id = "NON_ADMIN_ID"

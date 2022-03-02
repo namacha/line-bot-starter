@@ -86,7 +86,7 @@ class Router:
         return "\n".join(lines)
 
     def message(self, evt):
-        return self.func(evt)
+        return self.func(evt) or self.default
 
     def process(self, evt):
         msg = evt.message.text
@@ -95,21 +95,22 @@ class Router:
         user_id = evt.source.user_id
 
         for router in self.child_routers:
-            if router.pattern.match(cmd):
-                if router.reply_only:
-                    if user_id not in router.reply_only:
-                        send_msg = router.default
-                        if send_msg is None:
-                            continue
-                        else:
-                            break
-                if args:
-                    evt.message.text = " ".join(args)
-                    send_msg = router.process(evt)
-                else:
-                    send_msg = router.message(evt)
-                if send_msg:
-                    break
+            if not router.pattern.match(cmd):
+                continue
+            if router.reply_only:
+                if user_id not in router.reply_only:
+                    send_msg = router.default
+                    if send_msg is None:
+                        continue
+                    else:
+                        break
+            if args:
+                evt.message.text = " ".join(args)
+                send_msg = router.process(evt)
+            else:
+                send_msg = router.message(evt)
+            if send_msg:
+                break
         if send_msg is None and self.default:
             send_msg = self.default
         return send_msg
