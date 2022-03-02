@@ -93,6 +93,7 @@ class Router:
         send_msg = None
         cmd, *args = msg.split()
         user_id = evt.source.user_id
+
         for router in self.child_routers:
             if router.pattern.match(cmd):
                 if router.reply_only:
@@ -107,7 +108,8 @@ class Router:
                     send_msg = router.process(evt)
                 else:
                     send_msg = router.message(evt)
-                break
+                if send_msg:
+                    break
         if send_msg is None and self.default:
             send_msg = self.default
         return send_msg
