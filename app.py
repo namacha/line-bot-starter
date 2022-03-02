@@ -70,6 +70,9 @@ def response_message(event):
     return line_bot_api.reply_message(event.reply_token, msg)
 
 
+#  ------------------------------------------
+#     Write your bot logic below here !!!
+#  ------------------------------------------
 @router.register("こんにちは")
 def greet(event):
     user_display = line_bot_api.get_profile(event.source.user_id).display_name
