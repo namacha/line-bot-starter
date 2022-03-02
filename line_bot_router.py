@@ -98,7 +98,10 @@ class Router:
                 if router.reply_only:
                     if user_id not in router.reply_only:
                         send_msg = router.default
-                        break
+                        if send_msg is None:
+                            continue
+                        else:
+                            break
                 if args:
                     evt.message.text = " ".join(args)
                     send_msg = router.process(evt)
