@@ -23,15 +23,12 @@ LINE_CHANNEL_ACCESS_TOKEN = settings.LINE_CHANNEL_ACCESS_TOKEN
 LINE_CHANNEL_SECRET = settings.LINE_CHANNEL_SECRET
 
 
-# 管理者のラインユーザーID
-ADMIN_ID = ""
-
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 app = Flask(__name__)
 
-# ボットの受信メッセージルーター
+# Root message router
 router = Router()
 
 
@@ -45,7 +42,6 @@ def callback():
     signature = request.headers["X-Line-Signature"]
 
     body = request.get_data(as_text=True)
-    # app.logger.info("Request body: " + body)
 
     try:
         handler.handle(body, signature)
@@ -57,10 +53,10 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def response_message(event):
-    '''Lineボットのルートハンドラ
-    何かメッセージを受信した際に実行される'''
+    '''A handler of TextMessage.
+    This function will be executed when TextMessage is received.'''
     text = event.message.text
-    # ログ出力
+    #  Log output
     print(
         f"Received: {line_bot_api.get_profile(event.source.user_id).display_name}@{event.source.user_id}: {text}"
     )
