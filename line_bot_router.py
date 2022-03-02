@@ -45,8 +45,12 @@ LineBOTのハンドラにroot_router.processを割り当てると自動的にサ
 from functools import wraps
 import re
 
+from linebot.models import TextSendMessage
+
 
 class Router:
+
+    ___doc__ = ""
 
     @property
     def __doc__(self):
@@ -56,59 +60,73 @@ class Router:
     def __doc__(self):
         return self.func.__doc__
 
-    def __init__(self):
+    def __init__(self, default=None):
         self.pattern = re.compile("")
         self.child_routers = []
         self.func = lambda evt: None
+        self.reply_only = []
+        self.default = default
 
     def make_description_text(self) -> str:
-        '''自分の子Router以下のdocstringを全て抜き出し
-        改行で連結した文字列を返す'''
+        """自分の子Router以下のdocstringを全て抜き出し
+        改行で連結した文字列を返す"""
         lines = []
+        if self.__doc__:
+            lines.append(self.__doc__)
+
         def _recur(router):
             if not router.child_routers:
                 return
             for r in router.child_routers:
-                lines.append(r.__doc__)
+                if r.__doc__:
+                    lines.append(r.__doc__)
                 _recur(r)
+
         _recur(self)
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def message(self, evt):
         return self.func(evt)
 
     def process(self, evt):
         msg = evt.message.text
+        send_msg = None
         cmd, *args = msg.split()
+        user_id = evt.source.user_id
         for router in self.child_routers:
             if router.pattern.match(cmd):
+                if router.reply_only:
+                    if user_id not in router.reply_only:
+                        send_msg = router.default
+                        break
                 if args:
-                    evt.message.text = ' '.join(args)
-                    return router.process(evt)
+                    evt.message.text = " ".join(args)
+                    send_msg = router.process(evt)
                 else:
-                    return router.message(evt)
+                    send_msg = router.message(evt)
+                break
+        if send_msg is None and self.default:
+            send_msg = self.default
+        return send_msg
 
-    def register(self, pattern):
+    def register(self, pattern, default=None):
         def _register(func):
-            h = Router()
+            h = Router(default=default)
             h.pattern = re.compile(pattern)
             h.func = func
             self.child_routers.append(h)
             return h
+
         return _register
 
 
-def reply_only(*user_id, default=""):
-    '''user_idに指定されているユーザーIDからの
-    メッセージにのみ返信させるデコレータ'''
-    def _reply_only(func):
-        @wraps(func)
-        def _wrapper(evt):
-            if evt.source.user_id in user_id:
-                return func(evt)
-            else:
-                if default:
-                    return default
-                return
-        return _wrapper
+def reply_only(*user_id, default=None):
+    """user_idに指定されているユーザーIDからの
+    メッセージにのみ返信させるデコレータ"""
+
+    def _reply_only(router):
+        router.reply_only += user_id
+        router.default = default
+        return router
+
     return _reply_only
