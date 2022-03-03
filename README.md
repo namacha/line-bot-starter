@@ -1,5 +1,7 @@
-line-bot-starter
-==================================
+[![pytest](https://github.com/namacha/line-bot-starter/actions/workflows/pytest.yml/badge.svg)](https://github.com/namacha/line-bot-starter/actions/workflows/pytest.yml)
+
+# line-bot-starter
+
 A starter kit for Line Bot
 
 
