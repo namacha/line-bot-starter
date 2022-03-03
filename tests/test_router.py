@@ -10,12 +10,22 @@ from unittest.mock import Mock
 from line_bot_router import Router, reply_only
 
 
+ADMIN_ID = "ADMIN_ID"
+
+
 Event = Mock
 
 
-def _make_evt(msg: str):
+def _make_evt(msg: str) -> Event:
     event = Event()
     event.message.text = msg
+    event.source.user_id = "non_admin"
+    return event
+
+
+def _admin_evt(msg: str) -> Event:
+    event = _make_evt(msg)
+    event.source.user_id = ADMIN_ID
     return event
 
 
@@ -45,7 +55,7 @@ def cmd1_arg1_opt1(event):
     return get_function_name()
 
 
-@reply_only("ADMIN_ID", default="ADMIN ONLY")
+@reply_only(ADMIN_ID, default="ADMIN ONLY")
 @cmd1.register(r"^arg[67]$")
 def cmd1_arg2(event):
     """cmd1 arg[67]: admin only"""
@@ -69,7 +79,7 @@ def cmd2(event):
     return get_function_name()
 
 
-@reply_only("ADMIN_ID")
+@reply_only(ADMIN_ID)
 @root.register("^cmd3$")
 def cmd3_admin(event):
     return get_function_name()
@@ -152,63 +162,47 @@ def test_cmd1_arg1_opt_match():
 
 def test_cmd1_arg2_user_match():
     msg = "cmd1 arg6"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "ADMIN_ID"
+    event = _admin_evt(msg)
     assert root.process(event) == "cmd1_arg2"
 
 
 def test_cmd1_arg2_user_mismatch():
     msg = "cmd1 arg6"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "NON_ADMIN_ID"
+    event = _make_evt(msg)
     assert root.process(event) == "ADMIN ONLY"
 
 
 def test_cmd1_arg2_opt_user_match():
     msg = "cmd1 arg6 optA"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "ADMIN_ID"
+    event = _admin_evt(msg)
     assert root.process(event) == "cmd1_arg2_opt"
 
 
 def test_cmd1_arg2_opt_user_mismatch():
     msg = "cmd1 arg6 optA"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "NON_ADMIN_ID"
+    event = _make_evt(msg)
     assert root.process(event) == "ADMIN ONLY"
 
 
 def test_cmd1_arg2_opt2_user_match():
     msg = "cmd1 arg6 optE"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "ADMIN_ID"
+    event = _admin_evt(msg)
     assert root.process(event) == "cmd1_arg2_opt2"
 
 
 def test_cmd1_arg2_opt2_user_mismatch():
     msg = "cmd1 arg6 optE"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "NON_ADMIN_ID"
+    event = _make_evt(msg)
     assert root.process(event) == "ADMIN ONLY"
 
 
 def test_cmd3_admin():
     msg = "cmd3"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "ADMIN_ID"
+    event = _admin_evt(msg)
     assert root.process(event) == "cmd3_admin"
 
 
 def test_cmd3_normal():
     msg = "cmd3"
-    event = Event()
-    event.message.text = msg
-    event.source.user_id = "NORMAL"
+    event = _make_evt(msg)
     assert root.process(event) == "cmd3_normal"
