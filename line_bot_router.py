@@ -67,6 +67,9 @@ class Router:
         self.reply_only = []
         self.default = default
 
+    def user_limited(self):
+        return bool(self.reply_only)
+
     def make_description_text(self) -> str:
         """自分の子Router以下のdocstringを全て抜き出し
         改行で連結した文字列を返す"""
@@ -95,22 +98,21 @@ class Router:
         user_id = evt.source.user_id
 
         for router in self.child_routers:
-            if not router.pattern.match(cmd):
-                continue
-            if router.reply_only:
-                if user_id not in router.reply_only:
-                    send_msg = router.default
-                    if send_msg is None:
-                        continue
-                    else:
-                        break
-            if args:
-                evt.message.text = " ".join(args)
-                send_msg = router.process(evt)
-            else:
-                send_msg = router.message(evt)
-            if send_msg:
-                break
+            if router.pattern.match(cmd):
+                if router.user_limited():
+                    if user_id not in router.reply_only:
+                        send_msg = router.default
+                        if send_msg is None:
+                            continue
+                        else:
+                            break
+                if args:
+                    evt.message.text = " ".join(args)
+                    send_msg = router.process(evt)
+                else:
+                    send_msg = router.message(evt)
+                if send_msg:
+                    break
         if send_msg is None and self.default:
             send_msg = self.default
         return send_msg
