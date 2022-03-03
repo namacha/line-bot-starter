@@ -63,9 +63,20 @@ def cmd1_arg2_opt2(event):
     return get_function_name()
 
 
-@root.register("^arg2$")
-def arg2(event):
-    """arg2: desc"""
+@root.register("^cmd2$")
+def cmd2(event):
+    """cmd2: desc"""
+    return get_function_name()
+
+
+@reply_only("ADMIN_ID")
+@root.register("^cmd3$")
+def cmd3_admin(event):
+    return get_function_name()
+
+
+@root.register("^cmd3$")
+def cmd3_normal(event):
     return get_function_name()
 
 
@@ -75,7 +86,7 @@ def test_root_description():
         + """cmd1 arg1-3: description\n"""
         + """cmd1 arg[67]: admin only\n"""
         + """cmd1 arg[67] opt[ABC]: description\n"""
-        + """arg2: desc"""
+        + """cmd2: desc"""
     )
     assert desc_text == root.make_description_text()
 
@@ -105,6 +116,16 @@ def test_cmd1_match():
 
 def test_cmd1_mismatch():
     msg = "cmd11"
+    assert root.process(_make_evt(msg)) == "ROOT MISMATCH"
+
+
+def test_cmd2_match():
+    msg = "cmd2"
+    assert root.process(_make_evt(msg)) == "cmd2"
+
+
+def test_cmd2_mismatch():
+    msg = "cmd2a"
     assert root.process(_make_evt(msg)) == "ROOT MISMATCH"
 
 
@@ -175,3 +196,19 @@ def test_cmd1_arg2_opt2_user_mismatch():
     event.message.text = msg
     event.source.user_id = "NON_ADMIN_ID"
     assert root.process(event) == "ADMIN ONLY"
+
+
+def test_cmd3_admin():
+    msg = "cmd3"
+    event = Event()
+    event.message.text = msg
+    event.source.user_id = "ADMIN_ID"
+    assert root.process(event) == "cmd3_admin"
+
+
+def test_cmd3_normal():
+    msg = "cmd3"
+    event = Event()
+    event.message.text = msg
+    event.source.user_id = "NORMAL"
+    assert root.process(event) == "cmd3_normal"
