@@ -50,7 +50,7 @@ from linebot.models import TextSendMessage
 
 class Router:
 
-    ___doc__ = ""
+    __doc__ = ""
 
     @property
     def __doc__(self):
@@ -66,6 +66,8 @@ class Router:
         self.func = lambda evt: None
         self.reply_only = []
         self.default = default
+        self.name = ""
+        self.parent = None
 
     def user_limited(self):
         return bool(self.reply_only)
@@ -89,16 +91,16 @@ class Router:
         return "\n".join(lines)
 
     def message(self, evt):
-        return self.func(evt) or self.default
+        return self.func(evt)
 
     def process(self, evt):
         msg = evt.message.text
         send_msg = None
-        cmd, *args = msg.split()
+        head, *tails = msg.split()
         user_id = evt.source.user_id
 
         for router in self.child_routers:
-            if router.pattern.match(cmd):
+            if router.pattern.match(head):
                 if router.user_limited():
                     if user_id not in router.reply_only:
                         send_msg = router.default
@@ -106,8 +108,8 @@ class Router:
                             continue
                         else:
                             break
-                if args:
-                    evt.message.text = " ".join(args)
+                if tails:
+                    evt.message.text = " ".join(tails)
                     send_msg = router.process(evt)
                 else:
                     send_msg = router.message(evt)
@@ -122,6 +124,8 @@ class Router:
             h = Router(default=default)
             h.pattern = re.compile(pattern)
             h.func = func
+            h.name = func.__name__
+            h.parent = self
             self.child_routers.append(h)
             return h
 
